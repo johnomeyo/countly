@@ -1,3 +1,5 @@
+import 'package:countly/dashboard/dashboard_page.dart';
+import 'package:countly/transactions/add_transactions_page.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -32,39 +34,25 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        actions: [
-          IconButton(icon: const Icon(Icons.settings), onPressed: () {}),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Welcome to SmallBiz Manager')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Welcome Back!',
+              'Let’s get started!',
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Here is your business summary for today.',
+              'Choose what you want to do:',
               style: theme.textTheme.bodyLarge,
             ),
             const SizedBox(height: 24),
-            const SummaryCardGrid(),
-            const SizedBox(height: 24),
-            Text(
-              'Recent Transactions',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Expanded(child: TransactionList()),
+            const ActionButtons(),
           ],
         ),
       ),
@@ -72,132 +60,80 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class SummaryCardGrid extends StatelessWidget {
-  const SummaryCardGrid({super.key});
+class ActionButtons extends StatelessWidget {
+  const ActionButtons({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      physics: const NeverScrollableScrollPhysics(),
-      children: const [
-        SummaryCard(
-          title: 'Income',
-          amount: 'KES 12,000',
-          icon: Icons.arrow_downward,
-          color: Colors.green,
+    return Column(
+      children: [
+        HomeActionButton(
+          icon: Icons.attach_money,
+          label: 'Add Transaction',
+          onTap: () {
+            // Navigate to transaction form
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddTransactionPage()),
+            );
+          },
         ),
-        SummaryCard(
-          title: 'Expenses',
-          amount: 'KES 4,500',
-          icon: Icons.arrow_upward,
-          color: Colors.red,
+        const SizedBox(height: 16),
+        HomeActionButton(
+          icon: Icons.analytics,
+          label: 'View Dashboard',
+          onTap: () {
+            // Navigate to dashboard
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const DashboardPage()),
+            );
+          },
         ),
-        SummaryCard(
-          title: 'Profit',
-          amount: 'KES 7,500',
-          icon: Icons.trending_up,
-          color: Colors.blue,
-        ),
-        SummaryCard(
-          title: 'Sales',
-          amount: 'KES 18,000',
-          icon: Icons.sell,
-          color: Colors.orange,
+        const SizedBox(height: 16),
+        HomeActionButton(
+          icon: Icons.receipt_long,
+          label: 'Manage Records',
+          onTap: () {
+            // Navigate to transaction history
+          },
         ),
       ],
     );
   }
 }
 
-class SummaryCard extends StatelessWidget {
-  final String title;
-  final String amount;
+class HomeActionButton extends StatelessWidget {
   final IconData icon;
-  final Color color;
+  final String label;
+  final VoidCallback onTap;
 
-  const SummaryCard({
+  const HomeActionButton({
     super.key,
-    required this.title,
-    required this.amount,
     required this.icon,
-    required this.color,
+    required this.label,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 8),
-            Text(title, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 4),
-            Text(
-              amount,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
+        icon: Icon(icon, size: 24),
+        label: Text(
+          label,
+          style: theme.textTheme.titleMedium?.copyWith(color: Colors.white),
+        ),
+        onPressed: onTap,
       ),
-    );
-  }
-}
-
-class TransactionList extends StatefulWidget {
-  const TransactionList({super.key});
-
-  @override
-  State<TransactionList> createState() => _TransactionListState();
-}
-
-class _TransactionListState extends State<TransactionList> {
-  final List<Map<String, dynamic>> transactions = [
-    {'title': 'MPESA Payment', 'amount': 'KES 2,000', 'type': 'income'},
-    {'title': 'Bought Supplies', 'amount': 'KES 1,200', 'type': 'expense'},
-    {'title': 'Customer Payment', 'amount': 'KES 3,000', 'type': 'income'},
-
-    {'title': 'Utility Bill', 'amount': 'KES 800', 'type': 'expense'},
-    {'title': 'Salary Payment', 'amount': 'KES 5,000', 'type': 'expense'},
-    {'title': 'Refund Issued', 'amount': 'KES 1,500', 'type': 'expense'},
-    {'title': 'New Client Contract', 'amount': 'KES 4,000', 'type': 'income'},
-    {'title': 'Office Rent', 'amount': 'KES 6,000', 'type': 'expense'},
-    {'title': 'Equipment Purchase', 'amount': 'KES 3,500', 'type': 'expense'},
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.separated(
-      itemCount: transactions.length,
-      separatorBuilder: (_, __) => const Divider(),
-      itemBuilder: (context, index) {
-        final tx = transactions[index];
-        return ListTile(
-          leading: Icon(
-            tx['type'] == 'income' ? Icons.arrow_downward : Icons.arrow_upward,
-            color: tx['type'] == 'income' ? Colors.green : Colors.red,
-          ),
-          title: Text(tx['title']),
-          trailing: Text(
-            tx['amount'],
-            style: TextStyle(
-              color: tx['type'] == 'income' ? Colors.green : Colors.red,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        );
-      },
     );
   }
 }
