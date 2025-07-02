@@ -21,7 +21,7 @@ class _DashboardPageState extends State<DashboardPage> {
       'quantity': 4,
       'unitPrice': 5500,
       'total': 22000.0,
-      'timestamp': '2025-07-01T10:30:00',
+      'timestamp': '2025-01-01T10:30:00',
     },
     {
       'type': 'Sale',
@@ -31,7 +31,7 @@ class _DashboardPageState extends State<DashboardPage> {
       'quantity': 3,
       'unitPrice': 8500,
       'total': 25500.0,
-      'timestamp': '2025-07-01T12:00:00',
+      'timestamp': '2025-07-02T12:00:00',
     },
     {
       'type': 'Sale',
