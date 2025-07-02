@@ -1,4 +1,5 @@
-
+import 'package:countly/models/transaction.dart';
+import 'package:countly/services/hive_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -12,7 +13,7 @@ class AddTransactionPage extends StatefulWidget {
 class _AddTransactionPageState extends State<AddTransactionPage> {
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
-
+  final TransactionStorage _transactionStorage = TransactionStorage();
   final TextEditingController _categoryController = TextEditingController();
   final TextEditingController _productNameController = TextEditingController();
   final TextEditingController _brandController = TextEditingController();
@@ -32,23 +33,32 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         final String brand = _brandController.text.trim();
         final int quantity = int.parse(_quantityController.text.trim());
         final double unitPrice = double.parse(_unitPriceController.text.trim());
-        final double total = quantity * unitPrice;
+        final double total =
+            (quantity * unitPrice).toDouble(); 
 
-        final transactionData = {
-          'type': _transactionType,
-          'category': category,
-          'product': product,
-          'brand': brand,
-          'quantity': quantity,
-          'unitPrice': unitPrice,
-          'total': total,
-          'timestamp': DateTime.now().toIso8601String(),
-        };
 
-        // Simulate API call
+        // 1. Create a Transaction object
+        final Transaction newTransaction = Transaction(
+          type:
+              _transactionType, // Assuming _transactionType is defined elsewhere (e.g., 'Expense' or 'Income')
+          category: category,
+          product: product,
+          brand: brand,
+          quantity: quantity,
+          unitPrice: unitPrice,
+          total: total,
+          timestamp: DateTime.now(), 
+        );
+
+        // 2. Add the transaction using your TransactionStorage
+        await _transactionStorage.addTransaction(newTransaction);
+
+        print("Transaction Added to Hive: $newTransaction"); // For debugging
+
+        // --- CHANGE ENDS HERE ---
+
+        // Simulate API call (you can remove this Future.delayed if you are only using Hive)
         await Future.delayed(const Duration(seconds: 1));
-
-        print("Transaction Data: $transactionData");
 
         if (mounted) {
           _showSuccessDialog();
@@ -56,7 +66,9 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
         }
       } catch (e) {
         if (mounted) {
-          _showErrorSnackBar('Error saving transaction. Please try again.');
+          _showErrorSnackBar(
+            'Error saving transaction: $e',
+          ); // Log the error for more details
         }
       } finally {
         if (mounted) {
@@ -111,7 +123,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
-      appBar:AppBar(
+      appBar: AppBar(
         title: Text(
           'Add Transaction',
           style: theme.textTheme.headlineMedium?.copyWith(
@@ -224,7 +236,6 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     );
   }
 }
-
 
 // Transaction Type Selection Card
 class TransactionTypeCard extends StatelessWidget {

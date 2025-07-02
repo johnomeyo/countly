@@ -1,11 +1,17 @@
 import 'package:countly/dashboard/dashboard_page.dart';
+import 'package:countly/models/transaction.dart';
+import 'package:countly/services/hive_storage.dart';
 import 'package:countly/transactions/add_transactions_page.dart';
 import 'package:countly/transactions/transaction_management_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-void main() {
+void main()async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  Hive.registerAdapter(TransactionAdapter()); 
+  await TransactionStorage().init();
   runApp(const MyApp());
 }
 
@@ -19,7 +25,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.lightBlue, // Your desired primary color for light theme
+          seedColor: Colors.lightBlue, 
           brightness: Brightness.light,
         ),
       ),
@@ -27,12 +33,11 @@ class MyApp extends StatelessWidget {
       darkTheme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.lightBlue, // Your desired primary color for dark theme
+          seedColor: Colors.lightBlue, 
           brightness: Brightness.dark,
         ),
       ),
-      themeMode: ThemeMode.system, // Uses the system's theme (light/dark)
-
+      themeMode: ThemeMode.system, 
       home: const HomePage(),
       debugShowCheckedModeBanner: false,
     );
