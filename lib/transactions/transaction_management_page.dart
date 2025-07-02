@@ -1,4 +1,3 @@
-
 import 'package:countly/models/transaction.dart';
 import 'package:countly/services/hive_storage.dart';
 import 'package:flutter/material.dart';
@@ -52,17 +51,19 @@ class _TransactionManagementPageState extends State<TransactionManagementPage> {
     // or once in initState.
     // If you call this from a UI element (e.g., search or filter change),
     // then you'll wrap this in setState(() { ... });
-    final currentFiltered = allTransactions.where((t) {
-      final matchesType = filterType == 'All' || t.type == filterType;
-      final matchesSearch =
-          t.product.toLowerCase().contains(searchQuery.toLowerCase()) ||
+    final currentFiltered =
+        allTransactions.where((t) {
+          final matchesType = filterType == 'All' || t.type == filterType;
+          final matchesSearch =
+              t.product.toLowerCase().contains(searchQuery.toLowerCase()) ||
               t.brand.toLowerCase().contains(searchQuery.toLowerCase());
-      return matchesType && matchesSearch;
-    }).toList();
+          return matchesType && matchesSearch;
+        }).toList();
 
     // Only update if changes are actually needed to avoid unnecessary rebuilds
     if (filteredTransactions.length != currentFiltered.length ||
-        !listEquals(filteredTransactions, currentFiltered)) { // Helper to compare lists
+        !listEquals(filteredTransactions, currentFiltered)) {
+      // Helper to compare lists
       setState(() {
         filteredTransactions = currentFiltered;
       });
@@ -73,11 +74,11 @@ class _TransactionManagementPageState extends State<TransactionManagementPage> {
   bool listEquals(List<Transaction> a, List<Transaction> b) {
     if (a.length != b.length) return false;
     for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false; // This compares object references, might need deep comparison for value equality
+      if (a[i] != b[i])
+        return false; // This compares object references, might need deep comparison for value equality
     }
     return true;
   }
-
 
   double get totalSales => filteredTransactions
       .where((t) => t.type == 'Sale')
@@ -121,25 +122,26 @@ class _TransactionManagementPageState extends State<TransactionManagementPage> {
           ),
           // Use StreamBuilder to react to changes in transactions
           Expanded(
-            child: StreamBuilder<List<Transaction>>(
-              stream: _transactionsStream, // Listen to the stream
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: Text("Loading transactions..."));
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-                // No data yet, or an empty box
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const EmptyTransactionState();
-                }
+            // child: StreamBuilder<List<Transaction>>(
+            //   stream: _transactionsStream, // Listen to the stream
+            //   builder: (context, snapshot) {
+            //     if (snapshot.connectionState == ConnectionState.waiting) {
+            //       return const Center(child: Text("Loading transactions..."));
+            //     }
+            //     if (snapshot.hasError) {
+            //       return Center(child: Text('Error: ${snapshot.error}'));
+            //     }
+            //     // No data yet, or an empty box
+            //     if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            //       return const EmptyTransactionState();
+            //     }
 
-                // If data exists, it's already filtered in `filteredTransactions`
-                // because `applyFilters` is called on stream updates.
-                return TransactionList(transactions: filteredTransactions);
-              },
-            ),
+            //     // If data exists, it's already filtered in `filteredTransactions`
+            //     // because `applyFilters` is called on stream updates.
+            //     return TransactionList(transactions: filteredTransactions);
+            //   },
+            // ),
+            child: TransactionList(transactions: filteredTransactions),
           ),
         ],
       ),
@@ -177,7 +179,7 @@ class TransactionSummaryCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.shadow.withAlpha(25), // Adjusted alpha value
+            color: theme.colorScheme.shadow.withAlpha(25),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -198,7 +200,9 @@ class TransactionSummaryCard extends StatelessWidget {
             Container(
               width: 1,
               height: 60,
-              color: theme.colorScheme.outline.withAlpha(76), // Adjusted alpha value
+              color: theme.colorScheme.outline.withAlpha(
+                76,
+              ), // Adjusted alpha value
             ),
             Expanded(
               child: SummaryItem(
@@ -211,7 +215,9 @@ class TransactionSummaryCard extends StatelessWidget {
             Container(
               width: 1,
               height: 60,
-              color: theme.colorScheme.outline.withAlpha(76), // Adjusted alpha value
+              color: theme.colorScheme.outline.withAlpha(
+                76,
+              ), // Adjusted alpha value
             ),
             Expanded(
               child: SummaryItem(
@@ -325,11 +331,15 @@ class _TransactionFiltersState extends State<TransactionFilters> {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: theme.colorScheme.outline.withAlpha(51), // Adjusted alpha value
+          color: theme.colorScheme.outline.withAlpha(
+            51,
+          ), // Adjusted alpha value
         ),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.shadow.withAlpha(12), // Adjusted alpha value
+            color: theme.colorScheme.shadow.withAlpha(
+              12,
+            ), // Adjusted alpha value
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -353,7 +363,9 @@ class _TransactionFiltersState extends State<TransactionFilters> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                    color: theme.colorScheme.outline.withAlpha(76), // Adjusted alpha value
+                    color: theme.colorScheme.outline.withAlpha(
+                      76,
+                    ), // Adjusted alpha value
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
@@ -364,7 +376,9 @@ class _TransactionFiltersState extends State<TransactionFilters> {
                   ),
                 ),
                 filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(76), // Adjusted alpha value
+                fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(
+                  76,
+                ), // Adjusted alpha value
               ),
               onChanged: widget.onSearchChanged,
             ),
@@ -373,10 +387,14 @@ class _TransactionFiltersState extends State<TransactionFilters> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withAlpha(76), // Adjusted alpha value
+              color: theme.colorScheme.surfaceContainerHighest.withAlpha(
+                76,
+              ), // Adjusted alpha value
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: theme.colorScheme.outline.withAlpha(76), // Adjusted alpha value
+                color: theme.colorScheme.outline.withAlpha(
+                  76,
+                ), // Adjusted alpha value
               ),
             ),
             child: DropdownButton<String>(
@@ -421,7 +439,8 @@ class TransactionList extends StatelessWidget {
       itemBuilder: (context, index) {
         return TransactionCard(
           transaction: transactions[index], // Pass Transaction object
-          index: index, // Index still useful for potential staggered loading if re-added
+          index:
+              index, // Index still useful for potential staggered loading if re-added
         );
       },
     );
@@ -431,7 +450,8 @@ class TransactionList extends StatelessWidget {
 // Reusable Transaction Card Component (Animations Removed, now takes Transaction object)
 class TransactionCard extends StatelessWidget {
   final Transaction transaction; // Changed type
-  final int index; // Kept index for potential future use or just for a reference
+  final int
+  index; // Kept index for potential future use or just for a reference
 
   const TransactionCard({
     super.key,
@@ -467,7 +487,9 @@ class TransactionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: (isSale ? Colors.green : Colors.red).withAlpha(25), // Adjusted alpha
+                color: (isSale ? Colors.green : Colors.red).withAlpha(
+                  25,
+                ), // Adjusted alpha
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -502,7 +524,8 @@ class TransactionCard extends StatelessWidget {
                   Row(
                     children: [
                       TransactionDetailChip(
-                        label: 'Qty: ${transaction.quantity}', // Access property directly
+                        label:
+                            'Qty: ${transaction.quantity}', // Access property directly
                         icon: Icons.inventory_2_outlined,
                       ),
                       const SizedBox(width: 8),
@@ -514,7 +537,9 @@ class TransactionCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _formatTimestamp(transaction.timestamp), // Pass DateTime object
+                    _formatTimestamp(
+                      transaction.timestamp,
+                    ), // Pass DateTime object
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -571,17 +596,15 @@ class TransactionDetailChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withAlpha(76), // Adjusted alpha
+        color: theme.colorScheme.primaryContainer.withAlpha(
+          76,
+        ), // Adjusted alpha
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 14,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+          Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(width: 4),
           Text(
             label,
@@ -611,7 +634,9 @@ class EmptyTransactionState extends StatelessWidget {
           Icon(
             Icons.receipt_long_outlined,
             size: 80,
-            color: theme.colorScheme.onSurfaceVariant.withAlpha(127), // Adjusted alpha
+            color: theme.colorScheme.onSurfaceVariant.withAlpha(
+              127,
+            ), // Adjusted alpha
           ),
           const SizedBox(height: 16),
           Text(

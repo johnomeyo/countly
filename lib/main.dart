@@ -7,10 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-void main()async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
-  Hive.registerAdapter(TransactionAdapter()); 
+  Hive.registerAdapter(TransactionAdapter());
   await TransactionStorage().init();
   runApp(const MyApp());
 }
@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.lightBlue, 
+          seedColor: Colors.lightBlue,
           brightness: Brightness.light,
         ),
       ),
@@ -33,11 +33,11 @@ class MyApp extends StatelessWidget {
       darkTheme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.lightBlue, 
+          seedColor: Colors.lightBlue,
           brightness: Brightness.dark,
         ),
       ),
-      themeMode: ThemeMode.system, 
+      themeMode: ThemeMode.system,
       home: const HomePage(),
       debugShowCheckedModeBanner: false,
     );
@@ -180,54 +180,156 @@ class _QuickStatsCardState extends State<_QuickStatsCard>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final TransactionStorage transactionStorage = TransactionStorage();
 
     return AnimatedBuilder(
       animation: _scaleAnimation,
       builder: (context, child) {
         return Transform.scale(
           scale: _scaleAnimation.value,
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+          child: StreamBuilder<List<Transaction>>(
+            stream: transactionStorage.transactionsStream,
+            initialData: transactionStorage.getAllTransactions(),
+            builder: (context, snapshot) {
+              // Debugging: Log snapshot state
+              print(
+                'StreamBuilder snapshot: connectionState=${snapshot.connectionState}, hasData=${snapshot.hasData}, data=${snapshot.data}, error=${snapshot.error}',
+              );
+
+              if (snapshot.connectionState == ConnectionState.waiting &&
+                  !snapshot.hasData) {
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.trending_up,
+                              color: theme.colorScheme.primary,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Quick Overview',
+                              style: theme.textTheme.titleLarge,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        const Center(
+                          child: CircularProgressIndicator.adaptive(),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.error,
+                              color: theme.colorScheme.error,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Quick Overview',
+                              style: theme.textTheme.titleLarge,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Error loading data: ${snapshot.error}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              // Data is available (either initialData or from stream update)
+              final List<Transaction> transactions = snapshot.data ?? [];
+
+              // Calculate today's sales and transaction count
+              final DateTime now = DateTime.now();
+              final DateTime today = DateTime(now.year, now.month, now.day);
+
+              double todaysSales = 0.0;
+              int todaysTransactionsCount = 0;
+
+              for (var t in transactions) {
+                if (t.timestamp.year == today.year &&
+                    t.timestamp.month == today.month &&
+                    t.timestamp.day == today.day) {
+                  todaysTransactionsCount++;
+                  if (t.type == 'Sale') {
+                    todaysSales += t.total;
+                  }
+                }
+              }
+
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.trending_up,
-                        color: theme.colorScheme.primary,
-                        size: 24,
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.trending_up,
+                            color: theme.colorScheme.primary,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Quick Overview',
+                            style: theme.textTheme.titleLarge,
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Text('Quick Overview', style: theme.textTheme.titleLarge),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _StatItem(
+                              label: 'Today\'s Sales',
+                              value: 'Ksh ${todaysSales.toStringAsFixed(0)}',
+                              icon: Icons.money,
+                              color: Colors.green,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _StatItem(
+                              label: 'Transactions',
+                              value: todaysTransactionsCount.toString(),
+                              icon: Icons.receipt,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _StatItem(
-                          label: 'Today\'s Sales',
-                          value: '\$1,234',
-                          icon: Icons.attach_money,
-                          color: Colors.green,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _StatItem(
-                          label: 'Transactions',
-                          value: '24',
-                          icon: Icons.receipt,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         );
       },
@@ -326,6 +428,7 @@ class _ActionButtonsGrid extends StatelessWidget {
               subtitle: 'View and edit transaction history',
               color: Color(0xFF8B5CF6),
               isFullWidth: true,
+              // route: Demo(),
               route: TransactionManagementPage(),
             ),
           ],
