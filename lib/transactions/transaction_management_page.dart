@@ -1,6 +1,156 @@
+// import 'package:countly/models/transaction.dart';
+// import 'package:countly/services/hive_storage.dart';
+// import 'package:flutter/material.dart';
+
+// class TransactionManagementPage extends StatefulWidget {
+//   const TransactionManagementPage({super.key});
+
+//   @override
+//   State<TransactionManagementPage> createState() =>
+//       _TransactionManagementPageState();
+// }
+
+// class _TransactionManagementPageState extends State<TransactionManagementPage> {
+//   // Use Transaction objects instead of Maps
+//   List<Transaction> allTransactions = [];
+//   List<Transaction> filteredTransactions = [];
+
+//   String searchQuery = '';
+//   String filterType = 'All'; // 'All', 'Sale', 'Expense'
+
+//   // Get the singleton instance of TransactionStorage
+//   final TransactionStorage _transactionStorage = TransactionStorage();
+//   // Stream to listen for real-time updates from Hive
+//   late Stream<List<Transaction>> _transactionsStream;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     // Initialize the stream from TransactionStorage
+//     _transactionsStream = _transactionStorage.transactionsStream;
+
+//     // Listen to the stream and update the state
+//     _transactionsStream.listen((transactions) {
+//       setState(() {
+//         allTransactions = transactions;
+//         applyFilters(); // Re-apply filters whenever data changes
+//       });
+//     });
+
+//     allTransactions = _transactionStorage.getAllTransactions();
+//     applyFilters();
+//   }
+
+//   void applyFilters() {
+
+//     final currentFiltered =
+//         allTransactions.where((t) {
+//           final matchesType = filterType == 'All' || t.type == filterType;
+//           final matchesSearch =
+//               t.product.toLowerCase().contains(searchQuery.toLowerCase()) ||
+//               t.brand.toLowerCase().contains(searchQuery.toLowerCase());
+//           return matchesType && matchesSearch;
+//         }).toList();
+
+//     if (filteredTransactions.length != currentFiltered.length ||
+//         !listEquals(filteredTransactions, currentFiltered)) {
+//       setState(() {
+//         filteredTransactions = currentFiltered;
+//       });
+//     }
+//   }
+
+//   // Helper function to compare two lists of Transactions (shallow comparison)
+//   bool listEquals(List<Transaction> a, List<Transaction> b) {
+//     if (a.length != b.length) return false;
+//     for (int i = 0; i < a.length; i++) {
+//       if (a[i] != b[i])
+//         return false; // This compares object references, might need deep comparison for value equality
+//     }
+//     return true;
+//   }
+
+//   double get totalSales => filteredTransactions
+//       .where((t) => t.type == 'Sale')
+//       .fold(0.0, (sum, t) => sum + t.total);
+
+//   double get totalExpenses => filteredTransactions
+//       .where((t) => t.type == 'Expense')
+//       .fold(0.0, (sum, t) => sum + t.total);
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final theme = Theme.of(context);
+
+//     return Scaffold(
+//       backgroundColor: theme.colorScheme.surface,
+//       appBar: AppBar(
+//         title: const Text('Transaction Management'),
+//         centerTitle: true,
+//         elevation: 0,
+//       ),
+//       body: Column(
+//         children: [
+//           // TransactionSummaryCard now takes `Transaction` objects for calculation
+//           TransactionSummaryCard(
+//             totalSales: totalSales,
+//             totalExpenses: totalExpenses,
+//           ),
+//           TransactionFilters(
+//             searchQuery: searchQuery,
+//             filterType: filterType,
+//             onSearchChanged: (value) {
+//               searchQuery = value;
+//               applyFilters(); // Trigger filter re-application on search change
+//             },
+//             onFilterChanged: (value) {
+//               if (value != null) {
+//                 filterType = value;
+//                 applyFilters(); // Trigger filter re-application on filter change
+//               }
+//             },
+//           ),
+//           // Use StreamBuilder to react to changes in transactions
+//           Expanded(
+//             // child: StreamBuilder<List<Transaction>>(
+//             //   stream: _transactionsStream, // Listen to the stream
+//             //   builder: (context, snapshot) {
+//             //     if (snapshot.connectionState == ConnectionState.waiting) {
+//             //       return const Center(child: Text("Loading transactions..."));
+//             //     }
+//             //     if (snapshot.hasError) {
+//             //       return Center(child: Text('Error: ${snapshot.error}'));
+//             //     }
+//             //     // No data yet, or an empty box
+//             //     if (!snapshot.hasData || snapshot.data!.isEmpty) {
+//             //       return const EmptyTransactionState();
+//             //     }
+
+//             //     // If data exists, it's already filtered in `filteredTransactions`
+//             //     // because `applyFilters` is called on stream updates.
+//             //     return TransactionList(transactions: filteredTransactions);
+//             //   },
+//             // ),
+//             child: TransactionList(transactions: filteredTransactions),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+// ignore_for_file: use_build_context_synchronously
+
+import 'dart:io'; // For saving the file
+import 'dart:typed_data'; // For Uint8List
+
 import 'package:countly/models/transaction.dart';
 import 'package:countly/services/hive_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart' show Printing;
 
 class TransactionManagementPage extends StatefulWidget {
   const TransactionManagementPage({super.key});
@@ -11,25 +161,20 @@ class TransactionManagementPage extends StatefulWidget {
 }
 
 class _TransactionManagementPageState extends State<TransactionManagementPage> {
-  // Use Transaction objects instead of Maps
   List<Transaction> allTransactions = [];
   List<Transaction> filteredTransactions = [];
 
   String searchQuery = '';
   String filterType = 'All'; // 'All', 'Sale', 'Expense'
 
-  // Get the singleton instance of TransactionStorage
   final TransactionStorage _transactionStorage = TransactionStorage();
-  // Stream to listen for real-time updates from Hive
   late Stream<List<Transaction>> _transactionsStream;
 
   @override
   void initState() {
     super.initState();
-    // Initialize the stream from TransactionStorage
     _transactionsStream = _transactionStorage.transactionsStream;
 
-    // Listen to the stream and update the state
     _transactionsStream.listen((transactions) {
       setState(() {
         allTransactions = transactions;
@@ -37,20 +182,12 @@ class _TransactionManagementPageState extends State<TransactionManagementPage> {
       });
     });
 
-    // Manually fetch initial data just in case stream doesn't fire immediately
-    // Or if you prefer to load once and then listen for changes.
-    // However, the stream listener above will handle the initial load as well once it connects.
-    // For robust initial load, you might want a FutureBuilder on the stream in build,
-    // or ensure `init()` is awaited before MyApp.
+    // Initial load, ensuring filteredTransactions is populated
     allTransactions = _transactionStorage.getAllTransactions();
-    applyFilters(); // Apply filters to initial data
+    applyFilters();
   }
 
   void applyFilters() {
-    // No setState here, as it's called from the stream listener
-    // or once in initState.
-    // If you call this from a UI element (e.g., search or filter change),
-    // then you'll wrap this in setState(() { ... });
     final currentFiltered =
         allTransactions.where((t) {
           final matchesType = filterType == 'All' || t.type == filterType;
@@ -60,22 +197,25 @@ class _TransactionManagementPageState extends State<TransactionManagementPage> {
           return matchesType && matchesSearch;
         }).toList();
 
-    // Only update if changes are actually needed to avoid unnecessary rebuilds
+    // Only update state if the list has actually changed
+    // This helps prevent unnecessary rebuilds
     if (filteredTransactions.length != currentFiltered.length ||
-        !listEquals(filteredTransactions, currentFiltered)) {
-      // Helper to compare lists
+        !_listEquals(filteredTransactions, currentFiltered)) {
       setState(() {
         filteredTransactions = currentFiltered;
       });
     }
   }
 
-  // Helper function to compare two lists of Transactions (shallow comparison)
-  bool listEquals(List<Transaction> a, List<Transaction> b) {
+  // Helper function for shallow comparison of Transaction lists
+  bool _listEquals(List<Transaction> a, List<Transaction> b) {
     if (a.length != b.length) return false;
     for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i])
-        return false; // This compares object references, might need deep comparison for value equality
+      if (a[i] != b[i]) {
+        // This assumes Transaction objects have a meaningful operator== or are the same instance
+        // If Transaction is a custom class, ensure operator== and hashCode are overridden
+        return false;
+      }
     }
     return true;
   }
@@ -88,6 +228,157 @@ class _TransactionManagementPageState extends State<TransactionManagementPage> {
       .where((t) => t.type == 'Expense')
       .fold(0.0, (sum, t) => sum + t.total);
 
+  // Function to generate the PDF
+  Future<Uint8List> _generatePdf(
+    List<Transaction> transactions,
+    String title,
+  ) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        build:
+            (pw.Context context) => [
+              pw.Center(
+                child: pw.Text(
+                  title,
+                  style: pw.TextStyle(
+                    fontSize: 24,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ),
+              pw.SizedBox(height: 20),
+              if (searchQuery.isNotEmpty)
+                pw.Text(
+                  'Search Query: "$searchQuery"',
+                  style: const pw.TextStyle(fontSize: 12),
+                ),
+              if (filterType != 'All')
+                pw.Text(
+                  'Filtered by Type: "$filterType"',
+                  style: const pw.TextStyle(fontSize: 12),
+                ),
+              if (searchQuery.isNotEmpty || filterType != 'All')
+                pw.SizedBox(height: 10),
+
+              if (transactions.isEmpty)
+                pw.Center(
+                  child: pw.Text(
+                    'No transactions to display for the current filters.',
+                  ),
+                ),
+              if (transactions.isNotEmpty)
+                pw.Table.fromTextArray(
+                  headers: [
+                    'Date',
+                    'Product',
+                    'Brand',
+                    'Quantity',
+                    'Price',
+                    'Total',
+                    'Type',
+                  ],
+                  data:
+                      transactions
+                          .map(
+                            (t) => [
+                              '${t.timestamp.day}/${t.timestamp.month}/${t.timestamp.year}',
+                              t.product,
+                              t.brand,
+                              t.quantity.toString(),
+                              t.unitPrice.toStringAsFixed(2),
+                              t.total.toStringAsFixed(2),
+                              t.type,
+                            ],
+                          )
+                          .toList(),
+                  border: pw.TableBorder.all(color: PdfColors.grey),
+                  headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  cellAlignment: pw.Alignment.centerLeft,
+                  headerDecoration: const pw.BoxDecoration(
+                    color: PdfColors.grey300,
+                  ),
+                  cellPadding: const pw.EdgeInsets.all(5),
+                ),
+              pw.SizedBox(height: 20),
+              pw.Divider(),
+              pw.SizedBox(height: 10),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    'Total Sales: ${totalSales.toStringAsFixed(2)}',
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
+                  pw.Text(
+                    'Total Expenses: ${totalExpenses.toStringAsFixed(2)}',
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 10),
+              pw.Text(
+                'Net Balance: ${(totalSales - totalExpenses).toStringAsFixed(2)}',
+                style: pw.TextStyle(
+                  fontSize: 14,
+                  fontWeight: pw.FontWeight.bold,
+                  color:
+                      (totalSales - totalExpenses) >= 0
+                          ? PdfColors.green800
+                          : PdfColors.red800,
+                ),
+              ),
+            ],
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  // Function to handle downloading and sharing the PDF
+  void _downloadTransactionsPdf() async {
+    try {
+      // Show a loading indicator
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Generating PDF...')));
+
+      final Uint8List pdfBytes = await _generatePdf(
+        filteredTransactions,
+        'Transaction Report (Filtered)',
+      );
+
+      // Get the application's temporary directory
+      final output = await getTemporaryDirectory();
+      final String filePath = '${output.path}/transaction_report.pdf';
+      final file = File(filePath);
+
+      // Write the PDF bytes to the file
+      await file.writeAsBytes(pdfBytes);
+
+      // Dismiss loading indicator
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+      // Show options to open or share
+      // Using Printing package for a robust solution across platforms
+      await Printing.sharePdf(
+        bytes: pdfBytes,
+        filename: 'transaction_report.pdf',
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PDF generated successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to generate PDF: ${e.toString()}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -98,10 +389,16 @@ class _TransactionManagementPageState extends State<TransactionManagementPage> {
         title: const Text('Transaction Management'),
         centerTitle: true,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: _downloadTransactionsPdf,
+            tooltip: 'Download Report',
+          ),
+        ],
       ),
       body: Column(
         children: [
-          // TransactionSummaryCard now takes `Transaction` objects for calculation
           TransactionSummaryCard(
             totalSales: totalSales,
             totalExpenses: totalExpenses,
@@ -110,38 +407,31 @@ class _TransactionManagementPageState extends State<TransactionManagementPage> {
             searchQuery: searchQuery,
             filterType: filterType,
             onSearchChanged: (value) {
-              searchQuery = value;
-              applyFilters(); // Trigger filter re-application on search change
+              setState(() {
+                searchQuery = value;
+                applyFilters(); // Trigger filter re-application on search change
+              });
             },
             onFilterChanged: (value) {
               if (value != null) {
-                filterType = value;
-                applyFilters(); // Trigger filter re-application on filter change
+                setState(() {
+                  filterType = value;
+                  applyFilters(); // Trigger filter re-application on filter change
+                });
               }
             },
           ),
-          // Use StreamBuilder to react to changes in transactions
+          // TransactionList now directly uses filteredTransactions
           Expanded(
-            // child: StreamBuilder<List<Transaction>>(
-            //   stream: _transactionsStream, // Listen to the stream
-            //   builder: (context, snapshot) {
-            //     if (snapshot.connectionState == ConnectionState.waiting) {
-            //       return const Center(child: Text("Loading transactions..."));
-            //     }
-            //     if (snapshot.hasError) {
-            //       return Center(child: Text('Error: ${snapshot.error}'));
-            //     }
-            //     // No data yet, or an empty box
-            //     if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            //       return const EmptyTransactionState();
-            //     }
-
-            //     // If data exists, it's already filtered in `filteredTransactions`
-            //     // because `applyFilters` is called on stream updates.
-            //     return TransactionList(transactions: filteredTransactions);
-            //   },
-            // ),
-            child: TransactionList(transactions: filteredTransactions),
+            child:
+                filteredTransactions.isEmpty &&
+                        (searchQuery.isNotEmpty || filterType != 'All')
+                    ? const Center(
+                      child: Text("No transactions match your filters."),
+                    )
+                    : (allTransactions.isEmpty
+                        ? const EmptyTransactionState() // Show empty state only if there are no transactions at all
+                        : TransactionList(transactions: filteredTransactions)),
           ),
         ],
       ),
@@ -149,7 +439,6 @@ class _TransactionManagementPageState extends State<TransactionManagementPage> {
   }
 }
 
-// --- Reusable Summary Card Component (Animations Removed) ---
 class TransactionSummaryCard extends StatelessWidget {
   final double totalSales;
   final double totalExpenses;
